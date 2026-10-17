@@ -1,0 +1,18 @@
+# OpenShift / OKD: base manifests plus a Route. The base sets no fixed UID, so the
+# restricted-v2 SCC can assign one; the image keeps group 0 permissions for that.
+#   oc new-project fde && oc apply -k deploy/openshift
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../kubernetes/base
+  - route.yaml
+images:
+  - name: fde-03-evaluation
+    newName: image-registry.openshift-image-registry.svc:5000/fde/fde-03-evaluation
+    newTag: latest
+patches:
+  # OpenShift manages namespace security labels itself; drop the PSS labels from the base.
+  - target: {kind: Namespace, name: fde}
+    patch: |-
+      - op: remove
+        path: /metadata/labels

@@ -1,0 +1,12 @@
+# Docker Desktop's built-in Kubernetes shares Docker's image store, so the image
+# built with `docker build -t fde-03-evaluation:local .` is used directly.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: fde-03-evaluation
+    newName: fde-03-evaluation
+    newTag: local
+components:
+  - ../_shared

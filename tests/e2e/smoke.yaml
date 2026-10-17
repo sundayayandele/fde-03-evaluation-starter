@@ -1,0 +1,39 @@
+# End-to-end smoke checks run by scripts/smoke_test.py against a live evaluation service
+# (local process, Docker/Podman/Rancher Desktop, Kubernetes or cloud).
+checks:
+  - name: liveness
+    path: /health/live
+    expect_keys: [status]
+  - name: readiness
+    path: /health/ready
+    expect_keys: [status, version, goldens, runs, target_url]
+  - name: metrics exposed
+    path: /metrics/
+    expect_contains: http_requests_total
+  - name: web UI
+    path: /
+    expect_contains: RAG evaluation
+  - name: golden sets listed
+    path: /api/v1/goldens
+    expect_contains: refusal
+  - name: golden items served
+    path: /api/v1/goldens/refusal/v1/items?limit=2
+    expect_contains: refusal-0
+  - name: runs listed (empty in a fresh starter)
+    path: /api/v1/runs
+    expect_status: 200
+  - name: judge a numeric answer
+    method: POST
+    path: /api/v1/judge
+    json: {question: "Capex in FY2023?", gold: "$285 million", answer: "It was $285 million [1]", answer_type: numeric}
+    expect_contains: CORRECT
+  - name: judge input validation
+    method: POST
+    path: /api/v1/judge
+    json: {question: "q", gold: "g", answer: "a", answer_type: essay}
+    expect_status: 422
+  - name: unknown golden set
+    method: POST
+    path: /api/v1/runs
+    json: {golden: "nope"}
+    expect_status: 404

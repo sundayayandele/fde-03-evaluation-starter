@@ -1,0 +1,23 @@
+{
+  "name": "financebench",
+  "version": "v1",
+  "created_at": "2026-10-16T20:20:20+00:00",
+  "source": {
+    "url": "https://raw.githubusercontent.com/patronus-ai/financebench/cc39aeb4afdf33909ee1412188bf89035950c2eb/data/financebench_open_source.jsonl",
+    "sha256": "a5a2aa673e573e55675fc3c0f9aa38c1cf59d2abc91edb077534f71f10a71877",
+    "licence": "No licence file in the repository; Hugging Face card lists CC BY-NC 4.0 (verify). Non-commercial evaluation only; not redistributed."
+  },
+  "count": 150,
+  "by_answer_type": {
+    "free_text": 97,
+    "numeric": 53
+  },
+  "by_split": {
+    "dev": 79,
+    "test": 71
+  },
+  "by_domain": {
+    "finance": 150
+  },
+  "items_sha256": "9542ebae5fbaa9e8a2188037b0b80d6da5d67614050a24439f75bcab87109867"
+}

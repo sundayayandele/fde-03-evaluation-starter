@@ -1,0 +1,109 @@
+# One Compose file for Docker Desktop, Rancher Desktop (dockerd/moby engine)
+# and Podman Desktop (`podman compose`). Paths are relative to this file.
+#
+#   make up-docker | make up-rancher | make up-podman-compose
+#   docker compose -f deploy/compose/compose.yaml --profile observability up -d
+#   docker compose -f deploy/compose/compose.yaml --profile sut up -d     # + fde-02 to test
+#   docker compose -f deploy/compose/compose.yaml run --rm api rag-eval redteam
+#
+# The `sut` profile builds fde-02-llm-applications from FDE02_DIR (default: a sibling
+# checkout) with its demo corpus baked in. `observability` adds Prometheus, Grafana and
+# Jaeger; evaluation runs then send one trace per case to Jaeger (http://127.0.0.1:16686).
+#
+# Secrets come from your shell environment (the Makefile loads .env first).
+name: fde-03-evaluation
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: fde-03-evaluation:local
+    ports:
+      - "127.0.0.1:${HOST_PORT:-8000}:8000"   # local only; never bind 0.0.0.0 in labs
+    environment:
+      SERVICE_NAME: fde-03-evaluation
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      TARGET_URL: ${TARGET_URL:-http://sut:8000}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-mistral}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY:-}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health/ready')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  sut:
+    profiles: [sut]
+    build:
+      context: ${FDE02_DIR:-../../../fde-02-llm-applications}
+      dockerfile: Dockerfile
+      args:
+        CORPUS: ${SUT_CORPUS:-demo}
+    image: fde-02-llm-applications:local
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1536M
+
+  jaeger:
+    profiles: [observability]
+    image: docker.io/jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:16686:16686"     # UI
+      - "127.0.0.1:4318:4318"       # OTLP over HTTP
+
+  prometheus:
+    profiles: [observability]
+    image: docker.io/prom/prometheus:v2.55.1
+    volumes:
+      - ../../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on: [api]
+
+  grafana:
+    profiles: [observability]
+    image: docker.io/grafana/grafana:11.3.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ../../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on: [prometheus]

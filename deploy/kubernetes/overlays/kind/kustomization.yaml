@@ -1,0 +1,18 @@
+# kind (also used with Podman Desktop's kind integration). The image is loaded
+# into the cluster with `kind load image-archive`, so it is never pulled.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: fde-03-evaluation
+    newName: localhost/fde-03-evaluation
+    newTag: local
+components:
+  - ../_shared
+patches:
+  - target: {kind: Deployment, name: fde-03-evaluation}
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never

@@ -1,0 +1,15 @@
+# Nightly evaluation of the system under test, inside the cluster:
+#   kubectl apply -k deploy/kubernetes/jobs
+#   kubectl -n fde create job --from=cronjob/fde-03-redteam redteam-now     # run it now
+# Results print to the job log (kubectl -n fde logs job/redteam-now). The job exits 1 when
+# the release gate fails, which is what an alert or a GitOps promotion step should key on.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: fde
+labels:
+  - pairs:
+      app.kubernetes.io/name: fde-03-evaluation
+      app.kubernetes.io/part-of: fde-series
+    includeSelectors: false
+resources:
+  - cronjob-redteam.yaml

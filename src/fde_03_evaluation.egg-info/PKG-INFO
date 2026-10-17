@@ -1,0 +1,105 @@
+Metadata-Version: 2.4
+Name: fde-03-evaluation
+Version: 1.0.0
+Summary: Evaluation harness and service for RAG systems: versioned golden sets, calibrated LLM judge, red team, tracing and a CI release gate
+Author: Sunday Ayandele
+License: MIT
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+License-File: LICENSE
+License-File: LICENSE-CONTENT.md
+Requires-Dist: fastapi>=0.115
+Requires-Dist: uvicorn[standard]>=0.32
+Requires-Dist: pydantic>=2.9
+Requires-Dist: pydantic-settings>=2.6
+Requires-Dist: prometheus-client>=0.21
+Requires-Dist: httpx>=0.27
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: opentelemetry-api>=1.27
+Requires-Dist: opentelemetry-sdk>=1.27
+Requires-Dist: opentelemetry-exporter-otlp-proto-http>=1.27
+Provides-Extra: dev
+Requires-Dist: pytest>=8.3; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: ruff>=0.7; extra == "dev"
+Dynamic: license-file
+
+# fde-03-evaluation
+
+The starting point for every repo in the **Forward Deployed ML Engineer: Zero-to-Hired** series. Each phase repo (`fde-00` to `fde-07`) is created from this template, so all of them share one structure, one quality bar and one deployment matrix: **Docker Desktop, Podman Desktop and Rancher Desktop locally, AWS, Azure and GCP in the cloud**, plus Kubernetes, OpenShift and Helm.
+
+The template runs as-is: a small FastAPI service with health checks, Prometheus metrics, a provider-agnostic LLM client (Mistral by default; OpenAI, DeepSeek, Qwen, Kimi or self-hosted by configuration), and an end-to-end smoke test that every deployment path must pass.
+
+## Create a phase repo from this template
+
+```bash
+gh repo create sundayayandele/fde-00-programming --template sundayayandele/fde-03-evaluation --public --clone
+cd fde-00-programming
+python scripts/init_repo.py --repo fde-00-programming --package complaints_ingest
+make install && make test && make e2e
+```
+
+Then replace the hello endpoint with the phase's system, fill in `docs/`, write the weekly `labs/`, and wrap each learner exercise in solution markers (see [Reference and starter repos](#reference-and-starter-repos)).
+
+## Run it
+
+| Path | Command | What it proves |
+| --- | --- | --- |
+| Local Python | `make install && make e2e` | Code, tests and smoke checks |
+| Docker Desktop | `make up-docker` | Container image and Compose stack |
+| Podman Desktop | `make up-podman` (pod) or `make up-podman-compose` | Rootless containers, Kubernetes-style pod spec |
+| Rancher Desktop | `make up-rancher` | Same stack on Rancher's dockerd (moby) engine |
+| Local Kubernetes | `make k8s-docker`, `make k8s-rancher`, `make k8s-kind` | Manifests, probes, security context |
+| OpenShift | `make k8s-openshift`, then `oc apply -k deploy/openshift` | Route and arbitrary-UID compatibility |
+| AWS / Azure / GCP | `make tf-aws-plan` (and `azure`, `gcp`) | Terraform lab stacks with USD 50 monthly budget alerts |
+
+Step-by-step labs, sizing and troubleshooting: [desktop labs](docs/learning/DESKTOP-LABS.md) and [cloud labs](docs/learning/CLOUD-LABS.md). Run `make help` for every target.
+
+## Results
+
+The template has no model, so its "results" are the gates every phase repo must pass:
+
+| Gate | Evidence |
+| --- | --- |
+| Unit and API tests | `make test`, coverage gate 80% |
+| End-to-end | `make e2e` locally; `e2e` workflow runs process, Compose and kind |
+| Security | `security` workflow: pip-audit, gitleaks, Trivy (dependencies, secrets, image) |
+| Infrastructure as code | `iac` workflow: fmt, validate, tflint for AWS, Azure, GCP |
+| Manifests | `manifests` workflow: renders base, 3 desktop overlays, cloud, OpenShift, Helm; kubeconform |
+
+## Repository map
+
+```text
+app/                 FastAPI service (health, metrics, API)
+src/rag_eval/     package: config, provider-agnostic LLM client
+config/              providers.yaml (Mistral default; OpenAI, DeepSeek, Qwen, Kimi, self-hosted)
+scripts/             init_repo, make_starter, smoke_test, check_structure
+tests/               unit, API, starter-generator and structure tests; e2e/smoke.yaml
+evals/               evaluation harness and committed results (phase repos)
+labs/                one folder per curriculum week
+docs/                architecture, ADRs, customer, security, MLOps, datasets, infra, learning, TCO
+diagrams/source/     Mermaid sources (rendered in CI)
+deploy/              compose, podman, kubernetes (base + overlays), openshift, helm, gpu
+terraform/           aws, azure, gcp lab stacks
+monitoring/          Prometheus, alerts, Grafana
+.github/workflows/   ci, e2e, security, iac, manifests, diagrams, evals, publish-starter
+```
+
+## Reference and starter repos
+
+Every phase has a **reference repo** (complete solution, measured results) and a generated **starter repo** for learners. Wrap each exercise in the reference code:
+
+```python
+def greet(name: str) -> str:
+    # >>> SOLUTION: week-00 hello endpoint
+    return f"Hello, {name.strip()}!"
+    # <<< SOLUTION
+```
+
+`scripts/make_starter.py` replaces each block with a `NotImplementedError("TODO ...")` stub, blanks marked Markdown sections, drops paths in `.starterignore`, and the `publish-starter` workflow pushes the result to `<repo>-starter` on every release tag. Exercise tests carry `@pytest.mark.exercise`; starter CI skips them, learners run `make exercises`.
+
+## Licence
+
+Code: [MIT](LICENSE). Written content in `docs/`, `labs/` and Markdown files: [CC BY-SA 4.0](LICENSE-CONTENT.md). Datasets keep their own licences; see `docs/datasets/DATASETS.md` in each phase repo.
+
+Part of [fde-zero-to-hired](https://github.com/sundayayandele/fde-zero-to-hired) by Sunday Ayandele.

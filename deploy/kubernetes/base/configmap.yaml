@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fde-03-evaluation-config
+data:
+  SERVICE_NAME: fde-03-evaluation
+  ENVIRONMENT: k8s
+  LLM_PROVIDER: mistral
+  LOG_LEVEL: INFO
+  # The system under test: fde-02's Service in the same namespace.
+  TARGET_URL: http://fde-02-llm-applications.fde.svc.cluster.local
+  RUNS_DIR: /tmp/runs

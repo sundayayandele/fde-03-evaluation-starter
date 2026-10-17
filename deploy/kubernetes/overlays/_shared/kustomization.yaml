@@ -1,0 +1,24 @@
+# Shared desktop settings, reused by the docker-desktop, rancher-desktop and kind
+# overlays as a Kustomize Component: one replica and gentle autoscaling, because
+# desktop clusters have little headroom.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+  - target: {kind: Deployment, name: fde-03-evaluation}
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target: {kind: HorizontalPodAutoscaler, name: fde-03-evaluation}
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+  - target: {kind: PodDisruptionBudget, name: fde-03-evaluation}
+    patch: |-
+      - op: replace
+        path: /spec/minAvailable
+        value: 0

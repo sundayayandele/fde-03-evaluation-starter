@@ -1,0 +1,5 @@
+{{ include "fde.fullname" . }} is deployed.
+
+Smoke test it:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "fde.fullname" . }} 8000:{{ .Values.service.port }} &
+  python scripts/smoke_test.py --base-url http://127.0.0.1:8000

@@ -1,0 +1,18 @@
+{
+  "name": "refusal",
+  "version": "v1",
+  "created_at": "2026-10-16T20:29:12+00:00",
+  "source": {},
+  "count": 30,
+  "by_answer_type": {
+    "refusal": 30
+  },
+  "by_split": {
+    "dev": 13,
+    "test": 17
+  },
+  "by_domain": {
+    "finance": 30
+  },
+  "items_sha256": "4515327914f7c9dff9f959308793427335b5edcae09872483849a16d11cd9ad6"
+}

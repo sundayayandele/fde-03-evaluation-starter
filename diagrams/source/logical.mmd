@@ -1,0 +1,13 @@
+%% Logical view: how one evaluation run flows, independent of technology.
+flowchart LR
+  golden[(Golden set<br/>versioned, fingerprinted)] --> runner[Runner]
+  suite[(Red-team suite)] --> runner
+  runner --> target[Target adapter<br/>HTTP, prompt-only, replay]
+  target --> sut[System under test]
+  runner --> judge[Judge<br/>reference or LLM]
+  calib[(Calibration labels)] --> judge
+  judge --> metrics[Metrics with intervals]
+  metrics --> run[(Run files)]
+  run --> gate{Release gate}
+  baseline[(Baseline)] --> gate
+  run --> dashboards[Service, Grafana]

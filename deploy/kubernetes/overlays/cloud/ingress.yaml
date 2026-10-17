@@ -1,0 +1,15 @@
+# Uses the cluster's default IngressClass. Add TLS (cert-manager) before real traffic.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fde-03-evaluation
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fde-03-evaluation
+                port: {name: http}

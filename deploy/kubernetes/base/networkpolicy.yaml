@@ -1,0 +1,14 @@
+# Ingress only on the HTTP port. Egress is left open because the service calls
+# hosted LLM APIs; fde-05 tightens this for the air-gapped design.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fde-03-evaluation
+spec:
+  podSelector:
+    matchLabels:
+      app: fde-03-evaluation
+  policyTypes: [Ingress]
+  ingress:
+    - ports:
+        - {protocol: TCP, port: 8000}

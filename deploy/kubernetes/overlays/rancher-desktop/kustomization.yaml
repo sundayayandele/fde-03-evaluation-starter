@@ -1,0 +1,13 @@
+# Rancher Desktop runs k3s. With the dockerd (moby) engine, k3s sees images built
+# with `docker --context rancher-desktop build`; with containerd, build with
+# `nerdctl --namespace k8s.io build -t fde-03-evaluation:local .` instead.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: fde-03-evaluation
+    newName: fde-03-evaluation
+    newTag: local
+components:
+  - ../_shared

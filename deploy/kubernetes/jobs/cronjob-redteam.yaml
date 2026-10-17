@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: fde-03-redteam
+spec:
+  schedule: "17 2 * * *"            # 02:17 every night, off the hour
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0                # a failed gate is a result, not a crash to retry
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app: fde-03-evaluation-job
+        spec:
+          restartPolicy: Never
+          serviceAccountName: fde-03-evaluation
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: redteam
+              image: fde-03-evaluation:local
+              imagePullPolicy: IfNotPresent
+              command: ["sh", "-c"]
+              args:
+                - >-
+                  rag-eval redteam --out /tmp/runs/redteam &&
+                  python -c "import json,sys; r=json.load(open('/tmp/runs/redteam/redteam.json'));
+                  bad=[c for c,v in r['categories'].items() if v['severity']=='critical' and v['pass_rate']<1];
+                  print('critical failures:', bad or 'none'); sys.exit(1 if bad else 0)"
+              envFrom:
+                - configMapRef: {name: fde-03-evaluation-config}
+              resources:
+                requests: {cpu: 100m, memory: 128Mi}
+                limits: {cpu: 500m, memory: 512Mi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              volumeMounts:
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: tmp
+              emptyDir: {}

@@ -1,0 +1,12 @@
+%% Enterprise view: who uses the evaluation and where it sits in the release process.
+flowchart LR
+  eng[Engineering team] -- pull request --> gate[Release gate in CI]
+  gate -- pass --> pilot[Pilot release]
+  gate -- fail --> eng
+  pilot --> analysts[Analysts]
+  analysts -- labels 40 answers --> calib[Judge calibration]
+  sec[Security team] -- new attacks --> suite[Red-team suite v2]
+  suite --> gate
+  calib --> gate
+  sponsor[Customer sponsor] -- signs --> memo[Release-readiness memo]
+  gate --> memo

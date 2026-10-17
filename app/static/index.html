@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG evaluation</title>
+<style>
+  :root { --bg: #fafaf8; --fg: #1d1d1b; --muted: #6b6b66; --line: #e2e1dc; --ok: #1f7a4d;
+          --bad: #b3261e; --accent: #2f4f9e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --fg: #ecebe6; --muted: #a09f99; --line: #33332f; --ok: #5cc28f;
+            --bad: #ff8a80; --accent: #93a9e8; } }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 17px; margin: 32px 0 8px; }
+  p.sub { color: var(--muted); margin: 0 0 16px; }
+  .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line);
+           white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  tr:last-child td { border-bottom: 0; }
+  .ok { color: var(--ok); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; }
+  .ci { color: var(--muted); font-size: 12px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>RAG evaluation</h1>
+  <p class="sub">Golden-set runs and red-team results on disk. Rates show 95% Wilson
+    intervals. API: <a href="/docs">/docs</a> · metrics: <a href="/metrics/">/metrics</a></p>
+  <h2>Golden-set runs</h2>
+  <div class="wrap"><table id="runs"><thead><tr><th>Run</th><th>Target</th><th>Golden</th>
+    <th>n</th><th>Accuracy</th><th>Hit@5</th><th>False refusal</th><th>Abstention</th>
+    <th>p95 ms</th></tr></thead><tbody></tbody></table></div>
+  <h2>Red team</h2>
+  <div class="wrap"><table id="redteam"><thead><tr><th>Run</th><th>Target</th><th>Overall</th>
+    <th>Categories</th></tr></thead><tbody></tbody></table></div>
+  <h2>Golden sets</h2>
+  <div class="wrap"><table id="goldens"><thead><tr><th>Name</th><th>Version</th><th>Items</th>
+    <th>Types</th><th>Fingerprint</th><th>Items present</th></tr></thead><tbody></tbody>
+  </table></div>
+</main>
+<script>
+const esc = s => String(s ?? "—").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",
+  '"':"&quot;","'":"&#39;"}[c]));
+const rate = b => !b || b.rate == null ? "—" :
+  `${b.rate.toFixed(3)} <span class="ci">[${b.ci95[0].toFixed(2)}, ${b.ci95[1].toFixed(2)}]</span>`;
+const cell = v => `<td>${v}</td>`;
+async function load() {
+  const [runs, goldens] = await Promise.all([fetch("/api/v1/runs").then(r => r.json()),
+                                             fetch("/api/v1/goldens").then(r => r.json())]);
+  document.querySelector("#runs tbody").innerHTML = runs.filter(r => r.kind === "golden")
+    .map(r => "<tr>" + cell(esc(r.label || r.run_id)) + cell(esc(r.target_version)) +
+      cell(esc(`${r.golden.name}/${r.golden.version} (${r.golden.split})`)) + cell(r.cases) +
+      cell(rate(r.accuracy)) + cell(rate(r.retrieval_hit_at_5)) + cell(rate(r.false_refusal)) +
+      cell(rate(r.correct_abstention)) + cell(Math.round(r.latency_ms.p95)) + "</tr>").join("");
+  document.querySelector("#redteam tbody").innerHTML = runs.filter(r => r.kind === "redteam")
+    .map(r => "<tr>" + cell(esc(r.run_id)) + cell(esc(r.target_version)) +
+      cell(`<span class="${r.pass_rate === 1 ? "ok" : "bad"}">${r.pass_rate.toFixed(3)}</span>`) +
+      cell(Object.entries(r.categories).map(([k, v]) =>
+        `<span class="${v === 1 ? "ok" : "bad"}">${esc(k)} ${v.toFixed(2)}</span>`).join(" · ")) +
+      "</tr>").join("");
+  document.querySelector("#goldens tbody").innerHTML = goldens.map(g => "<tr>" +
+    cell(esc(g.name)) + cell(esc(g.version)) + cell(g.count) +
+    cell(esc(Object.entries(g.by_answer_type).map(([k, v]) => `${k} ${v}`).join(", "))) +
+    cell(`<code>${esc(g.items_sha256.slice(0, 12))}</code>`) +
+    cell(g.items_present ? "yes" : "build locally") + "</tr>").join("");
+}
+load();
+</script>
+</body>
+</html>

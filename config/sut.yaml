@@ -1,0 +1,45 @@
+# Named configurations of the system under test (fde-02-llm-applications), started by
+# scripts/sut.py with these environment variables. Add a config here rather than passing
+# ad-hoc flags, so every run in runs/ can be reproduced from its label.
+configs:
+  basic:                # BM25 over every filing: no routing, no rerank, no dense vectors
+    RETRIEVAL_MODE: bm25
+    RERANKER: none
+    ROUTE: "false"
+    ANSWER_MODE: extractive
+  basic-routed:         # + company/year routing
+    RETRIEVAL_MODE: bm25
+    RERANKER: none
+    ROUTE: "true"
+    ANSWER_MODE: extractive
+  advanced:             # hybrid BM25 + LSA, lexical rerank, routing (fde-02's default)
+    RETRIEVAL_MODE: hybrid
+    EMBEDDER: lsa
+    RERANKER: lexical
+    ROUTE: "true"
+    ANSWER_MODE: extractive
+  advanced-llm:         # the same retrieval with Mistral answers (needs MISTRAL_API_KEY)
+    RETRIEVAL_MODE: hybrid
+    EMBEDDER: lsa
+    RERANKER: lexical
+    ROUTE: "true"
+    ANSWER_MODE: llm
+  # Guardrails off at query time (v1.0 behaviour on a v1.1 build). Pair it with an index
+  # built with `ingest --no-guard` to reproduce v1.0 exactly.
+  advanced-noguard:
+    RETRIEVAL_MODE: hybrid
+    EMBEDDER: lsa
+    RERANKER: lexical
+    ROUTE: "true"
+    ANSWER_MODE: extractive
+    SCOPE_GUARD: "off"
+    MASK_OUTPUT_PII: "false"
+  # Non-finance corpora (PubMedQA abstracts, CUAD contracts): the finance scope guard is
+  # domain-specific, so it is off; PII masking and injection quarantine stay on.
+  advanced-open:
+    RETRIEVAL_MODE: hybrid
+    EMBEDDER: lsa
+    RERANKER: lexical
+    ROUTE: "true"
+    ANSWER_MODE: extractive
+    SCOPE_GUARD: "off"

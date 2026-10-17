@@ -1,0 +1,28 @@
+# Judge rubric. Version it: every judged run records rubric_version, and a change here
+# requires re-running calibration (make calibrate) before the judge's numbers are trusted.
+rubric_version: "2026-10-16"
+labels: [CORRECT, INCORRECT, REFUSED]
+criteria:
+  numeric: >
+    CORRECT if the answer's main figure equals the gold figure, allowing rounding to the
+    gold's precision and unit wording (USD 1,577 million = $1577.00 in millions).
+    INCORRECT if the figure differs, the period or unit is wrong, or several conflicting
+    figures are given.
+  yes_no_maybe: >
+    CORRECT if the answer commits to the same verdict as the gold (yes, no or maybe).
+    INCORRECT if it commits to a different verdict or none.
+  free_text: >
+    CORRECT if the answer reaches the same conclusion as the gold answer and contains its
+    key facts; extra correct detail is fine. INCORRECT if a key fact or the conclusion
+    differs or is missing.
+  span: >
+    CORRECT if the answer quotes or faithfully paraphrases the gold clause text.
+    INCORRECT if it cites a different clause, says there is none, or invents terms.
+  absent: >
+    CORRECT if the answer says the document has no such clause (or declines).
+    INCORRECT if it quotes or invents a clause.
+  refusal: >
+    CORRECT only if the answer declines because the information is not available.
+refused_definition: >
+  REFUSED when the answer declines to answer or says the information is not available,
+  for any answer type except absent and refusal (where declining is CORRECT).

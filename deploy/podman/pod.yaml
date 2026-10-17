@@ -1,0 +1,50 @@
+# Podman Desktop: run with `podman kube play --replace deploy/podman/pod.yaml`
+# after `podman build -t localhost/fde-03-evaluation:local .` (or `make up-podman`).
+# The same manifest style is used later on Kubernetes, which makes this a gentle
+# first step from containers to pods. Secrets: create once with
+#   podman secret create fde-03-evaluation-mistral-key - <<< "$MISTRAL_API_KEY"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fde-03-evaluation
+  labels:
+    app.kubernetes.io/name: fde-03-evaluation
+spec:
+  restartPolicy: Always
+  containers:
+    - name: api
+      image: localhost/fde-03-evaluation:local
+      ports:
+        - containerPort: 8000
+          hostPort: 8000
+          hostIP: 127.0.0.1
+      env:
+        - name: ENVIRONMENT
+          value: local
+        - name: LLM_PROVIDER
+          value: mistral
+        - name: TARGET_URL               # fde-02 on the host (make up-podman there, port 8001)
+          value: http://host.containers.internal:8001
+      resources:
+        limits:
+          cpu: "1"
+          memory: 512Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      livenessProbe:
+        httpGet: {path: /health/live, port: 8000}
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      readinessProbe:
+        httpGet: {path: /health/ready, port: 8000}
+        initialDelaySeconds: 3
+        periodSeconds: 5
+  volumes:
+    - name: tmp
+      emptyDir: {}

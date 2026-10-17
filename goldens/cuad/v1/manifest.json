@@ -1,0 +1,23 @@
+{
+  "name": "cuad",
+  "version": "v1",
+  "created_at": "2026-10-16T20:20:21+00:00",
+  "source": {
+    "url": "https://raw.githubusercontent.com/TheAtticusProject/cuad/67faa0e6023b04fcaae6cc09497ab00e5d63a2a2/data.zip",
+    "sha256": "f8161d18bea4e9c05e78fa6dda61c19c846fb8087ea969c172753bc2f45b999a",
+    "licence": "CC BY 4.0 (The Atticus Project; verify on atticusprojectai.org/cuad)."
+  },
+  "count": 200,
+  "by_answer_type": {
+    "absent": 116,
+    "span": 84
+  },
+  "by_split": {
+    "dev": 106,
+    "test": 94
+  },
+  "by_domain": {
+    "legal": 200
+  },
+  "items_sha256": "e42c16f7f52b710a273861099897cc3ec0d7af8f4af0964d365cc1491ca23503"
+}

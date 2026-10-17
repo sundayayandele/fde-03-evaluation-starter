@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fde-03-evaluation
+spec:
+  selector:
+    app: fde-03-evaluation
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

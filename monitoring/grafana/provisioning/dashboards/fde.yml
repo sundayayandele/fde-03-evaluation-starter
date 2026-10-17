@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: fde
+    folder: FDE series
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

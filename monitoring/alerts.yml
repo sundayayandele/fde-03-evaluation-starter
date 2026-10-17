@@ -1,0 +1,42 @@
+groups:
+  - name: fde-03-evaluation
+    rules:
+      - alert: ServiceDown
+        expr: up{job="fde-03-evaluation"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: "fde-03-evaluation is not being scraped"
+          runbook: "docs/DEPLOYMENT.md#troubleshooting"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_requests_total[5m])), 1e-9) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 5% of requests return 5xx"
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "p95 latency above 1 second"
+
+  - name: fde-03-evaluation-results
+    rules:
+      - alert: RedTeamCriticalFailure
+        expr: min by (run) (eval_redteam_pass_rate{category=~"indirect_injection|pii_leakage"}) < 1
+        labels: {severity: critical}
+        annotations:
+          summary: "Red-team run {{ $labels.run }} has a failing critical category"
+          runbook: "docs/RELEASE-READINESS.md#red-team"
+
+      - alert: FalseRefusalsHigh
+        expr: max by (run, golden) (eval_false_refusal_rate) > 0.05
+        labels: {severity: warning}
+        annotations:
+          summary: "Run {{ $labels.run }} declines more than 5% of answerable {{ $labels.golden }} questions"

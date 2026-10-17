@@ -1,0 +1,65 @@
+# LLM providers for the FDE series. Every provider below exposes an
+# OpenAI-compatible chat completions endpoint, so src/<package>/llm.py can
+# switch between them by configuration alone.
+#
+# Model names are placeholders by role. Pin the exact model IDs at the start of
+# each build from the provider's live model list, and record them in an ADR.
+#
+# Data residency rule (see docs/security/THREAT-MODEL.md): regulated or personal
+# data goes only to providers with `regulated_data_allowed: true`.
+
+default: mistral
+
+providers:
+  mistral:
+    base_url: https://api.mistral.ai/v1
+    api_key_env: MISTRAL_API_KEY
+    regulated_data_allowed: true   # EU-hosted; still check your DPA
+    models:
+      default: mistral-small-latest
+      strong: mistral-large-latest
+      embed: mistral-embed
+    # USD per million tokens. Assumed list prices, not fetched live: verify on
+    # https://mistral.ai/pricing before quoting costs (docs/COST-TCO.md).
+    prices:
+      mistral-small-latest: {input: 0.10, output: 0.30}
+      mistral-large-latest: {input: 2.00, output: 6.00}
+      mistral-embed: {input: 0.10}
+
+  openai:
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    regulated_data_allowed: false
+    models:
+      default: PIN_AT_BUILD_TIME
+      strong: PIN_AT_BUILD_TIME
+
+  deepseek:
+    base_url: https://api.deepseek.com/v1
+    api_key_env: DEEPSEEK_API_KEY
+    regulated_data_allowed: false  # hosted outside the EU; public datasets only
+    models:
+      default: PIN_AT_BUILD_TIME
+
+  qwen:
+    base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+    api_key_env: DASHSCOPE_API_KEY
+    regulated_data_allowed: false  # hosted API; public datasets only
+    models:
+      default: PIN_AT_BUILD_TIME
+
+  kimi:
+    base_url: https://api.moonshot.ai/v1
+    api_key_env: MOONSHOT_API_KEY
+    regulated_data_allowed: false  # hosted API; public datasets only
+    models:
+      default: PIN_AT_BUILD_TIME
+
+  # Self-hosted open weights served by vLLM (fde-05 onwards). Any
+  # OpenAI-compatible server works, including a local one.
+  selfhosted:
+    base_url: http://localhost:8001/v1
+    api_key_env: SELFHOSTED_API_KEY
+    regulated_data_allowed: true
+    models:
+      default: PIN_AT_BUILD_TIME

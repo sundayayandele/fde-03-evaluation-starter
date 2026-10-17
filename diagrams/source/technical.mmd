@@ -1,0 +1,12 @@
+%% Technical view: processes, protocols and stores.
+flowchart LR
+  ci[GitHub Actions<br/>release-gate, evals] --> cli[rag-eval CLI<br/>Python 3.12]
+  dev[Engineer] --> cli
+  cli -- "HTTP POST /api/v1/ask<br/>traceparent" --> fde02[fde-02 FastAPI<br/>uvicorn :8001]
+  cli -- HTTPS --> mistral[(Mistral API<br/>judge, prompt-only)]
+  cli -- OTLP/HTTP --> jaeger[(Jaeger :4318<br/>or Langfuse)]
+  cli --> files[(runs/, evals/results/)]
+  svc[Eval service FastAPI :8000] --> files
+  prom[Prometheus :9090] -- scrape --> svc
+  prom -- scrape --> fde02
+  graf[Grafana :3000] --> prom
