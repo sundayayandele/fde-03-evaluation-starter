@@ -1,0 +1,63 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . pip-audit
+      - run: pip-audit
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependency and secret scan (blocking)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      # Lab stacks make deliberate trade-offs (public lab endpoints, no CMK encryption,
+      # open egress to LLM APIs). They are listed in docs/security/THREAT-MODEL.md, so
+      # misconfiguration findings are reported here without failing the build.
+      - name: IaC and manifest misconfiguration report (non-blocking)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          severity: MEDIUM,HIGH,CRITICAL
+          exit-code: "0"
+      - name: Build image
+        run: docker build -t fde-03-evaluation:scan .
+      - name: Image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: fde-03-evaluation:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

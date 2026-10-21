@@ -1,0 +1,67 @@
+name: e2e
+
+# Starts the real stack and calls it: once as a local process, once through the
+# same Compose file used on Docker, Podman and Rancher Desktop, and once on a kind
+# cluster with the desktop Kubernetes manifests.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: make e2e
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx pyyaml
+      - run: docker compose -f deploy/compose/compose.yaml up -d --build --wait
+      - run: python scripts/smoke_test.py --base-url http://127.0.0.1:8000
+      - if: failure()
+        run: docker compose -f deploy/compose/compose.yaml logs
+      - if: always()
+        run: docker compose -f deploy/compose/compose.yaml down -v
+
+  kind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx pyyaml
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: fde
+      - name: Build and load image
+        run: |
+          docker build -t localhost/fde-03-evaluation:local .
+          kind load docker-image localhost/fde-03-evaluation:local --name fde
+      - name: Deploy the kind overlay
+        run: |
+          kubectl apply -k deploy/kubernetes/overlays/kind
+          kubectl -n fde rollout status deploy/fde-03-evaluation --timeout=180s
+      - name: Smoke test through a port-forward
+        run: |
+          kubectl -n fde port-forward svc/fde-03-evaluation 8000:80 &
+          sleep 3
+          python scripts/smoke_test.py --base-url http://127.0.0.1:8000
+      - if: failure()
+        run: kubectl -n fde describe pods; kubectl -n fde logs deploy/fde-03-evaluation --tail=100

@@ -1,0 +1,35 @@
+name: iac
+
+# Format, validate and lint the Terraform for all three clouds. No credentials are
+# needed (backend disabled); `plan` and `apply` stay manual lab steps.
+on:
+  push:
+    paths: ["terraform/**", ".github/workflows/iac.yml"]
+  pull_request:
+    paths: ["terraform/**", ".github/workflows/iac.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: [aws, azure, gcp]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Format
+        run: terraform fmt -check -diff -recursive terraform/${{ matrix.cloud }}
+      - name: Validate
+        run: |
+          terraform -chdir=terraform/${{ matrix.cloud }} init -backend=false -input=false
+          terraform -chdir=terraform/${{ matrix.cloud }} validate
+      - uses: terraform-linters/setup-tflint@v4
+      - name: Lint
+        run: |
+          tflint --chdir=terraform/${{ matrix.cloud }} --init
+          tflint --chdir=terraform/${{ matrix.cloud }}

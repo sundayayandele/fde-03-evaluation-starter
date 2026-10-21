@@ -1,0 +1,9 @@
+# gitleaks configuration: default rules plus a narrow allowlist.
+title = "FDE series"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Names of Kubernetes Secrets are references, not secret values"
+regexes = ['''^[a-z0-9-]+-secrets$''']

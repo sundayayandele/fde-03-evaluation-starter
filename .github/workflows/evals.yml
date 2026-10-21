@@ -1,0 +1,87 @@
+name: evals
+
+# The measurements that need a model, run by hand (they cost cents):
+#   - fde-02 answering with Mistral (advanced-llm) on the FinanceBench test half + refusal set
+#   - prompt-only baseline (the same model with no documents)
+#   - LLM judge on every run, and its calibration on the constructed set
+# Human labels for judge calibration are made locally (`make eval-llm label-export`), because
+# the answers quote FinanceBench, which may not be redistributed: artefacts of a public repo
+# are public, so per-case files are left out of them.
+# Needs the MISTRAL_API_KEY repository secret. Regulated data never goes to non-sovereign
+# providers: keep LLM_PROVIDER=mistral (see config/providers.yaml).
+on:
+  workflow_dispatch:
+    inputs:
+      fde02_ref:
+        description: "fde-02-llm-applications ref to evaluate"
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  llm-evals:
+    runs-on: ubuntu-latest
+    if: ${{ !endsWith(github.repository, '-starter') }}
+    timeout-minutes: 120
+    env:
+      FDE02_DIR: ${{ github.workspace }}/fde02
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: fde03
+      - uses: actions/checkout@v4
+        with:
+          repository: sundayayandele/fde-02-llm-applications
+          ref: ${{ inputs.fde02_ref }}
+          path: fde02
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: test -n "$MISTRAL_API_KEY" || { echo "Set the MISTRAL_API_KEY repository secret"; exit 1; }
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - working-directory: fde02
+        run: python -m venv .venv && .venv/bin/pip install -q -e .
+      - working-directory: fde03
+        run: pip install -q -e ".[dev]"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            fde02/data/financebench
+            fde02/index
+          key: fb-index-${{ hashFiles('fde02/src/filing_assistant/ingest.py', 'fde02/src/filing_assistant/index.py', 'fde02/src/filing_assistant/guardrails.py', 'fde02/src/filing_assistant/embed.py') }}
+      - working-directory: fde02
+        run: |
+          [ -f index/manifest.json ] || { .venv/bin/filing-assistant download && \
+            .venv/bin/filing-assistant ingest --financebench --embed lsa; }
+      - working-directory: fde03
+        run: rag-eval fetch financebench && rag-eval golden build financebench --force
+      - name: fde-02 with Mistral answers, judged by the LLM judge
+        working-directory: fde03
+        run: |
+          python scripts/sut.py up --config advanced-llm --index $FDE02_DIR/index
+          rag-eval run --golden financebench --split test --judge llm --label llm-advanced --run-id llm-advanced-financebench
+          rag-eval run --golden refusal --split all --judge llm --label llm-advanced --run-id llm-advanced-refusal
+          python scripts/sut.py down
+      - name: Prompt-only baseline (no documents)
+        working-directory: fde03
+        run: |
+          rag-eval run --golden financebench --split test --prompt-only --judge llm --label prompt-only --run-id prompt-only-financebench
+          rag-eval run --golden refusal --split all --prompt-only --judge llm --label prompt-only --run-id prompt-only-refusal
+      - name: Calibrate the LLM judge on the constructed set
+        working-directory: fde03
+        run: rag-eval calibrate --judge llm --out runs/calibration-llm.json
+      - name: Summary
+        if: always()
+        working-directory: fde03
+        run: |
+          rag-eval report runs/*-financebench runs/*-refusal >> "$GITHUB_STEP_SUMMARY" || true
+          python -c "import json;d=json.load(open('runs/calibration-llm.json'));print(f\"LLM judge on the constructed set: agreement {d['agreement']}, kappa {d['kappa']}\")" >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: llm-evals
+          path: |
+            fde03/runs/
+            !fde03/runs/**/cases.jsonl

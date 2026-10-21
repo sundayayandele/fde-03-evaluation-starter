@@ -1,0 +1,12 @@
+# Paths left out of the generated learner starter repo (glob patterns, relative to repo root).
+# Reference-only material: worked answers, measured results, the publish workflow itself.
+.github/workflows/publish-starter.yml
+evals/results/*
+evals/results/**
+docs/customer/worked-*
+labs/*/solution*
+# Git-ignored local artefacts (the generator does not read .gitignore)
+runs/*
+runs/**
+goldens/financebench/*/items.jsonl
+labels*.csv

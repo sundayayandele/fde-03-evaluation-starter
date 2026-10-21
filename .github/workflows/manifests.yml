@@ -1,0 +1,38 @@
+name: manifests
+
+# Render every Kubernetes target (base, three desktop overlays, cloud, OpenShift,
+# Helm) and validate against the Kubernetes schemas.
+on:
+  push:
+    paths: ["deploy/**", ".github/workflows/manifests.yml"]
+  pull_request:
+    paths: ["deploy/**", ".github/workflows/manifests.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin kubeconform
+      - name: Render
+        run: |
+          mkdir -p rendered
+          for t in base overlays/docker-desktop overlays/rancher-desktop overlays/kind overlays/cloud; do
+            kubectl kustomize deploy/kubernetes/$t > rendered/$(echo $t | tr / -).yaml
+          done
+          kubectl kustomize deploy/openshift > rendered/openshift.yaml
+          for chart in deploy/helm/*/; do
+            helm lint "$chart"
+            helm template ci "$chart" > rendered/helm-$(basename $chart).yaml
+            helm template ci "$chart" --set route.enabled=true --set ingress.enabled=true > rendered/helm-$(basename $chart)-all.yaml
+          done
+      - name: Validate (OpenShift Route and other CRDs are skipped, not failed)
+        run: kubeconform -strict -summary -ignore-missing-schemas rendered/*.yaml

@@ -1,0 +1,32 @@
+name: diagrams
+
+on:
+  push:
+    paths: ["diagrams/source/**", ".github/workflows/diagrams.yml"]
+  pull_request:
+    paths: ["diagrams/source/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --global @mermaid-js/mermaid-cli
+      - name: Render Mermaid to SVG
+        run: |
+          mkdir -p diagrams/rendered
+          echo '{"args":["--no-sandbox"]}' > /tmp/puppeteer.json
+          for f in diagrams/source/*.mmd; do
+            mmdc -p /tmp/puppeteer.json -i "$f" -o "diagrams/rendered/$(basename "${f%.mmd}").svg"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: diagrams
+          path: diagrams/rendered/

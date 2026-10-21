@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+kubeconfig*
+
+# Data, models and run artefacts (publish models to the Hugging Face Hub, not Git)
+data/
+# Evaluation runs hold questions, answers and retrieved passages: commit summaries to
+# evals/results/ and text-free baselines to evals/baselines/ instead (see DATASETS.md).
+runs/
+# FinanceBench may not be redistributed: only its manifest (fingerprint) is committed;
+# `rag-eval fetch financebench && rag-eval golden build financebench` recreates the items.
+goldens/financebench/*/items.jsonl
+labels*.csv
+artifacts/*
+!artifacts/.gitkeep
+models/
+checkpoints/
+outputs/
+mlruns/
+wandb/
+*.safetensors
+*.gguf
+*.bin
+*.pt
+*.ckpt
+*.sqlite
+*.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+.terraform.lock.hcl
+terraform.tfvars
+
+# Rendered diagrams (CI renders them)
+diagrams/rendered/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

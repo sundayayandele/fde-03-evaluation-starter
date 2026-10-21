@@ -1,0 +1,108 @@
+name: release-gate
+
+# Blocks regressions in the document assistant (fde-02) before release.
+#
+# Checks out fde-02 at a ref, builds its FinanceBench index and the red-team corpus, then runs:
+#   FinanceBench test half + refusal set (advanced config, extractive answers, offline),
+#   the red-team suite, reference-judge calibration, and `rag-eval gate --profile ci-offline`
+#   against the committed baseline (evals/baselines/). The job fails when any gate check fails.
+#
+# Triggers: pull requests to this repo that touch the harness, a weekly run, by hand with any
+# fde-02 ref, or from fde-02's own CI as a reusable workflow:
+#   jobs:
+#     gate:
+#       uses: sundayayandele/fde-03-evaluation/.github/workflows/gate.yml@main
+#       with: {fde02_ref: "${{ github.sha }}"}
+on:
+  pull_request:
+    paths: ["src/**", "config/**", "goldens/**", "evals/baselines/**", "scripts/sut.py"]
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      fde02_ref:
+        description: "fde-02-llm-applications ref (branch, tag or SHA) to evaluate"
+        default: main
+  workflow_call:
+    inputs:
+      fde02_ref:
+        type: string
+        default: main
+      fde02_repository:
+        type: string
+        default: sundayayandele/fde-02-llm-applications
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    if: ${{ !endsWith(github.repository, '-starter') }}
+    timeout-minutes: 90
+    env:
+      FDE02_DIR: ${{ github.workspace }}/fde02
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # In a reusable-workflow call github.repository is the caller (fde-02).
+          repository: ${{ contains(github.repository, 'fde-03-evaluation') && github.repository || 'sundayayandele/fde-03-evaluation' }}
+          path: fde03
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.fde02_repository || 'sundayayandele/fde-02-llm-applications' }}
+          ref: ${{ inputs.fde02_ref || 'main' }}
+          path: fde02
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - name: Install fde-02 (system under test) in its own virtualenv
+        working-directory: fde02
+        run: python -m venv .venv && .venv/bin/pip install -q -e .
+      - name: Install fde-03 (harness)
+        working-directory: fde03
+        run: pip install -q -e ".[dev]"
+      - name: Cache the FinanceBench index (keyed on fde-02's ingestion code)
+        uses: actions/cache@v4
+        with:
+          path: |
+            fde02/data/financebench
+            fde02/index
+          key: fb-index-${{ hashFiles('fde02/src/filing_assistant/ingest.py', 'fde02/src/filing_assistant/index.py', 'fde02/src/filing_assistant/guardrails.py', 'fde02/src/filing_assistant/embed.py') }}
+      - name: Build the FinanceBench index (skipped when cached)
+        working-directory: fde02
+        run: |
+          [ -f index/manifest.json ] || { .venv/bin/filing-assistant download && \
+            .venv/bin/filing-assistant ingest --financebench --embed lsa; }
+      - name: Golden sets and red-team corpus
+        working-directory: fde03
+        run: |
+          rag-eval fetch
+          rag-eval golden build financebench --force
+          rag-eval golden verify
+          rag-eval corpus redteam
+          $FDE02_DIR/.venv/bin/filing-assistant --data-dir $FDE02_DIR/data \
+            --index-dir data/index/redteam ingest --demo --pdfs data/corpus/redteam --embed lsa
+      - name: Evaluate, red-team, calibrate
+        working-directory: fde03
+        run: |
+          make eval-financebench CONFIG=advanced FB_INDEX=$FDE02_DIR/index
+          make redteam calibrate
+      - name: Release gate
+        working-directory: fde03
+        # LABEL (v<fde-02 version>) is derived by the Makefile from FDE02_DIR.
+        run: make gate BASELINE=evals/baselines/financebench-test-advanced-v1.1.0.jsonl
+      - name: Summary
+        if: always()
+        working-directory: fde03
+        run: |
+          cat runs/*-gate.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "no gate report" >> "$GITHUB_STEP_SUMMARY"
+          rag-eval report runs/*-financebench runs/*-refusal >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-gate-runs
+          path: |
+            fde03/runs/
+            !fde03/runs/**/cases.jsonl
