@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fde-03-evaluation"
-version = "1.0.0"
+version = "1.1.0"
 description = "Evaluation harness and service for RAG systems: versioned golden sets, calibrated LLM judge, red team, tracing and a CI release gate"
 readme = "README.md"
 requires-python = ">=3.12"

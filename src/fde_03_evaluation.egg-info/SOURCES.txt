@@ -24,6 +24,14 @@ src/rag_eval/runner.py
 src/rag_eval/targets.py
 src/rag_eval/tracing.py
 tests/test_api.py
+tests/test_cli.py
+tests/test_golden.py
+tests/test_judge_calibration.py
 tests/test_llm.py
+tests/test_llm_client.py
 tests/test_make_starter.py
+tests/test_metrics.py
+tests/test_redteam.py
+tests/test_runner_gate.py
 tests/test_structure.py
+tests/test_targets_tracing.py
