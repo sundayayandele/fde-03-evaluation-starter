@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Dependency and secret scan (blocking)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scanners: vuln,secret
@@ -47,7 +47,7 @@ jobs:
       # open egress to LLM APIs). They are listed in docs/security/THREAT-MODEL.md, so
       # misconfiguration findings are reported here without failing the build.
       - name: IaC and manifest misconfiguration report (non-blocking)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: config
           severity: MEDIUM,HIGH,CRITICAL
@@ -55,7 +55,7 @@ jobs:
       - name: Build image
         run: docker build -t fde-03-evaluation:scan .
       - name: Image scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: fde-03-evaluation:scan
           severity: HIGH,CRITICAL
