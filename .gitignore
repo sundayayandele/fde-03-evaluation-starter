@@ -31,7 +31,7 @@ goldens/financebench/*/items.jsonl
 labels*.csv
 artifacts/*
 !artifacts/.gitkeep
-models/
+/models/
 checkpoints/
 outputs/
 mlruns/

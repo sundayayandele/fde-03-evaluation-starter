@@ -1,2 +1,0 @@
-[console_scripts]
-rag-eval = rag_eval.cli:main
