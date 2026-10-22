@@ -4,6 +4,9 @@ All notable changes. Versions follow semantic versioning; the starter repo is re
 
 ## [Unreleased]
 
+### Added
+- `.devcontainer/devcontainer.json` and an "Open in GitHub Codespaces" badge: a ready Python 3.12 environment that runs `make install` on creation.
+
 ### Fixed
 - `.gitignore`: anchor `models/` to the repository root so it no longer matches source folders such as `src/*/models/`.
 - Stop tracking the generated `src/fde_03_evaluation.egg-info/` build metadata.

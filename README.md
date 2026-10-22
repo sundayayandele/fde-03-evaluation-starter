@@ -5,6 +5,8 @@
 
 # fde-03-evaluation: evaluation, red team and release gate for RAG systems
 
+[![Open the starter in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/sundayayandele/fde-03-evaluation-starter?quickstart=1)
+
 Phase 3 (weeks 16–18) and **Capstone 2** of the **Forward Deployed ML Engineer: Zero-to-Hired** series. A customer will not put an LLM system in front of staff on a demo's word. You build what decides whether it ships: **measured quality with confidence intervals**, a **judge you have calibrated**, a **red team** that attacks it the way a hostile document would, and a **CI gate** that blocks a release that got worse.
 
 **The system:** `rag-eval`, a typed and tested Python package with a CLI, a FastAPI service, a web UI and Grafana dashboards. It evaluates [fde-02's document assistant](https://github.com/sundayayandele/fde-02-llm-applications) and any service with the same `POST /api/v1/ask` contract, as a black box over HTTP.
