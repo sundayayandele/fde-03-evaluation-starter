@@ -1,0 +1,3 @@
+# False positive: the comment on line 2 of deploy/kubernetes/base/deployment.yaml shows how to create the Secret,
+# with "..." as the value (MISTRAL_API_KEY=...). No real key has ever been committed (checked 6 November 2026).
+965e838419bc96536222e882330fbfe2d9026c99:deploy/kubernetes/base/deployment.yaml:generic-api-key:2
