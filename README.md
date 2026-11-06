@@ -1,7 +1,8 @@
 > **Learner starter.** This repo is generated from the reference solution.
 > Work through `labs/` week by week and replace each `TODO` until `make exercises` is green
 > (`make test` stays green throughout).
-> Do not open the reference repo until you have tried each exercise yourself.
+> The reference solution unlocks on [itlearning.tech](https://itlearning.tech) once you have passed
+> this phase's exit check or capstone.
 
 # fde-03-evaluation: evaluation, red team and release gate for RAG systems
 
@@ -9,7 +10,7 @@
 
 Phase 3 (weeks 16–18) and **Capstone 2** of the **Forward Deployed ML Engineer: Zero-to-Hired** series. A customer will not put an LLM system in front of staff on a demo's word. You build what decides whether it ships: **measured quality with confidence intervals**, a **judge you have calibrated**, a **red team** that attacks it the way a hostile document would, and a **CI gate** that blocks a release that got worse.
 
-**The system:** `rag-eval`, a typed and tested Python package with a CLI, a FastAPI service, a web UI and Grafana dashboards. It evaluates [fde-02's document assistant](https://github.com/sundayayandele/fde-02-llm-applications) and any service with the same `POST /api/v1/ask` contract, as a black box over HTTP.
+**The system:** `rag-eval`, a typed and tested Python package with a CLI, a FastAPI service, a web UI and Grafana dashboards. It evaluates fde-02's document assistant and any service with the same `POST /api/v1/ask` contract, as a black box over HTTP.
 
 - **Versioned golden sets** with fingerprints: FinanceBench (finance), PubMedQA (health), CUAD (legal contracts) and a hand-written refusal set. Each has a dev half (tune here) and a test half (report here).
 - **Metrics with uncertainty:** answer accuracy by type, retrieval hit@5, citation precision and recall, false refusals, correct abstentions, latency and cost. Every rate carries a 95% Wilson interval; version comparisons use a paired bootstrap.
@@ -46,7 +47,7 @@ rag-eval golden list              # golden sets, counts, splits
 rag-eval calibrate                # reference judge on 390 constructed cases
 ```
 
-Evaluate fde-02 (a sibling checkout with its virtualenv and FinanceBench index, from `make install ingest` there):
+Evaluate fde-02 (a sibling folder `../fde-02-llm-applications` with its virtualenv and FinanceBench index, from `make install ingest` there: your own Capstone 1 build, or the fde-02 reference solution downloaded from itlearning.tech; set `FDE02_DIR` if it lives elsewhere):
 
 ```bash
 make goldens                      # downloads pinned sources, builds FinanceBench items, verifies all
@@ -139,7 +140,7 @@ labs/ docs/ deploy/ terraform/ monitoring/
 
 ## Reference and starter
 
-[`fde-03-evaluation`](https://github.com/sundayayandele/fde-03-evaluation) is the **reference** repo: complete code and measured results. [`fde-03-evaluation-starter`](https://github.com/sundayayandele/fde-03-evaluation-starter) is generated from it with `make starter`:
+`fde-03-evaluation` is the **reference** repo (private: learners download it from the course on [itlearning.tech](https://itlearning.tech) after passing this phase's exit check or capstone): complete code and measured results. [`fde-03-evaluation-starter`](https://github.com/sundayayandele/fde-03-evaluation-starter) is generated from it with `make starter`:
 
 - Each exercise becomes a `NotImplementedError("TODO ...")` stub.
 - Exercise tests carry `@pytest.mark.exercise` (`make exercises`).

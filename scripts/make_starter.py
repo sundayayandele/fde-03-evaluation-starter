@@ -125,7 +125,8 @@ def kind_for(path: Path) -> str:
 STARTER_BANNER = """> **Learner starter.** This repo is generated from the reference solution.
 > Work through `labs/` week by week and replace each `TODO` until `make exercises` is green
 > (`make test` stays green throughout).
-> Do not open the reference repo until you have tried each exercise yourself.
+> The reference solution unlocks on [itlearning.tech](https://itlearning.tech) once you have passed
+> this phase's exit check or capstone.
 
 """
 
